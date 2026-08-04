@@ -1,0 +1,17 @@
+Titre: Poulet basquaise
+Portions: 4
+Temps: 45
+Tags: Déjeuner, Dîner
+Video: https://...
+Source: https://...
+Kcal: 520
+Proteines: 35
+Glucides: 40
+Lipides: 18
+Ingredients:
+Poulet;400;g;6.00
+Poivron;2;;1.50
+Oignon;1;;0.30
+Etapes:
+1. Couper le poulet en morceaux.
+2. Faire revenir avec les légumes.
