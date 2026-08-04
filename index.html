@@ -26,6 +26,9 @@
   --font-mono:'IBM Plex Mono','Courier New',monospace;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
+input[type=number]{-moz-appearance:textfield;}
 body{
   background:var(--bg);
   color:var(--text);
@@ -208,6 +211,20 @@ main{max-width:1100px;margin:0 auto;padding:20px;}
   padding:8px;border-radius:6px;font-size:0.82rem;margin-top:8px;
 }
 .btn-add-row:hover{color:var(--accent);border-color:var(--accent-dim);}
+.ing-row-actions{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;}
+.ing-row-actions .btn-add-row{margin-top:0;flex:1;min-width:160px;}
+.bulk-ing-box{
+  background:var(--surface-2);border:1px dashed var(--border);border-radius:8px;
+  padding:12px;margin-top:10px;display:none;
+}
+.bulk-ing-box.open{display:block;}
+.bulk-ing-box textarea{
+  width:100%;min-height:100px;background:var(--bg);border:1px solid var(--border);color:var(--text);
+  padding:9px 10px;border-radius:6px;font-size:0.84rem;font-family:var(--font-mono);resize:vertical;line-height:1.5;
+}
+.bulk-ing-box .hint{font-size:0.72rem;color:var(--text-muted);margin:6px 0 10px;line-height:1.4;}
+.bulk-ing-box .actions{display:flex;gap:8px;}
+.bulk-ing-box .btn-primary,.bulk-ing-box .btn-secondary{padding:7px 14px;font-size:0.82rem;}
 .form-actions{display:flex;gap:10px;margin-top:20px;}
 .btn-primary{background:var(--accent);color:var(--bg);border:none;padding:10px 20px;border-radius:8px;font-weight:600;font-size:0.9rem;}
 .btn-primary:hover{background:#e6b458;}
@@ -355,6 +372,26 @@ main{max-width:1100px;margin:0 auto;padding:20px;}
       <div class="import-status" id="importStatus"></div>
       <div class="import-hint">Fonctionne seulement sur les sites qui exposent des données de recette structurées (schema.org). Pour Instagram/TikTok ou la plupart des blogs, ça ne marchera pas — remplis le formulaire à la main. Vérifie toujours ce qui est importé.</div>
     </div>
+
+    <div class="import-box">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+        <label style="font-size:0.78rem;color:var(--text-muted);">Coller une recette complète (format texte)</label>
+        <button type="button" class="btn-add-row" id="btnToggleFullPaste" style="margin:0;">Afficher le champ</button>
+      </div>
+      <div class="bulk-ing-box" id="fullPasteBox">
+        <textarea id="fullPasteText" placeholder="Titre: Poulet basquaise&#10;Portions: 4&#10;Temps: 45&#10;Tags: Déjeuner, Dîner&#10;Video: https://...&#10;Source: https://...&#10;Kcal: 520&#10;Proteines: 35&#10;Glucides: 40&#10;Lipides: 18&#10;Ingredients:&#10;Poulet;400;g;6.00&#10;Poivron;2;;1.50&#10;Oignon;1;;0.30&#10;Etapes:&#10;1. Couper le poulet en morceaux.&#10;2. Faire revenir avec les légumes."></textarea>
+        <div class="hint">
+          Un champ par ligne, format <b>clé: valeur</b> — l'ordre n'a pas d'importance et seuls les champs présents sont utilisés :<br>
+          <b>Titre</b>, <b>Portions</b>, <b>Temps</b> (min), <b>Tags</b> (séparés par des virgules), <b>Video</b>, <b>Source</b>, <b>Kcal</b>, <b>Proteines</b>, <b>Glucides</b>, <b>Lipides</b>.<br>
+          Puis un bloc <b>Ingredients:</b> avec une ligne par ingrédient au format <span class="mono">nom;quantité;unité;prix</span>, et un bloc <b>Etapes:</b> avec le reste du texte (une étape par ligne).
+        </div>
+        <div class="actions">
+          <button type="button" class="btn-primary" id="btnFullPasteParse">Remplir le formulaire</button>
+          <button type="button" class="btn-secondary" id="btnFullPasteCancel">Annuler</button>
+        </div>
+      </div>
+    </div>
+
     <form id="recipeForm">
       <div class="form-grid">
         <div class="form-field full">
@@ -393,7 +430,18 @@ main{max-width:1100px;margin:0 auto;padding:20px;}
 
       <div class="section-title">Ingrédients (pour les portions de base)</div>
       <div class="ing-rows" id="ingRows"></div>
-      <button type="button" class="btn-add-row" id="btnAddIng">+ Ajouter un ingrédient</button>
+      <div class="ing-row-actions">
+        <button type="button" class="btn-add-row" id="btnAddIng">+ Ajouter un ingrédient</button>
+        <button type="button" class="btn-add-row" id="btnToggleBulkIng">+ Ajouter plusieurs d'un coup</button>
+      </div>
+      <div class="bulk-ing-box" id="bulkIngBox">
+        <textarea id="bulkIngText" placeholder="Poulet;200;g;3.50&#10;Riz;150;g;0.80&#10;Oignon;1;;0.30"></textarea>
+        <div class="hint">Un ingrédient par ligne, format : <b>nom;quantité;unité;prix</b> — laisse une partie vide si tu ne sais pas (ex: <span class="mono">Oignon;1;;0.30</span>). Les lignes valides s'ajoutent à la liste ci-dessus.</div>
+        <div class="actions">
+          <button type="button" class="btn-primary" id="btnBulkIngAdd">Ajouter à la liste</button>
+          <button type="button" class="btn-secondary" id="btnBulkIngCancel">Annuler</button>
+        </div>
+      </div>
 
       <div class="section-title">Étapes de préparation</div>
       <div class="form-field full">
@@ -764,6 +812,34 @@ function addIngRow(data = {}) {
 function escapeAttr(s) { return (s || "").replace(/"/g, "&quot;"); }
 document.getElementById("btnAddIng").onclick = () => addIngRow();
 
+document.getElementById("btnToggleBulkIng").onclick = () => {
+  document.getElementById("bulkIngBox").classList.toggle("open");
+  document.getElementById("bulkIngText").focus();
+};
+document.getElementById("btnBulkIngCancel").onclick = () => {
+  document.getElementById("bulkIngText").value = "";
+  document.getElementById("bulkIngBox").classList.remove("open");
+};
+document.getElementById("btnBulkIngAdd").onclick = () => {
+  const raw = document.getElementById("bulkIngText").value;
+  const lines = raw.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+  if (lines.length === 0) return;
+  let added = 0;
+  lines.forEach(line => {
+    const parts = line.split(";").map(p => p.trim());
+    const nom = parts[0] || "";
+    if (!nom) return;
+    const quantite = parts[1] ? parseFloat(parts[1].replace(",", ".")) : "";
+    const unite = parts[2] || "";
+    const prix = parts[3] ? parseFloat(parts[3].replace(",", ".")) : "";
+    addIngRow({ nom, quantite: isNaN(quantite) ? "" : quantite, unite, prix: isNaN(prix) ? "" : prix });
+    added++;
+  });
+  document.getElementById("bulkIngText").value = "";
+  document.getElementById("bulkIngBox").classList.remove("open");
+  if (added > 0) showToast(`${added} ingrédient${added > 1 ? "s" : ""} ajouté${added > 1 ? "s" : ""}`);
+};
+
 function openForm(recipe = null) {
   editingId = recipe ? recipe.id : null;
   document.getElementById("formTitle").textContent = recipe ? "Modifier la recette" : "Ajouter une recette";
@@ -772,6 +848,10 @@ function openForm(recipe = null) {
   document.getElementById("importUrl").value = "";
   document.getElementById("importStatus").textContent = "";
   document.getElementById("importStatus").className = "import-status";
+  document.getElementById("bulkIngText").value = "";
+  document.getElementById("bulkIngBox").classList.remove("open");
+  document.getElementById("fullPasteText").value = "";
+  document.getElementById("fullPasteBox").classList.remove("open");
 
   if (recipe) {
     document.getElementById("rTitre").value = recipe.titre || "";
@@ -929,6 +1009,111 @@ function parseIngredientLine(line) {
   }
   return { quantite: "", unite: "", nom: line.trim() };
 }
+
+/* ---------- Coller une recette complète (format texte) ---------- */
+const FULL_PASTE_FIELD_KEYS = {
+  "titre": "titre", "portions": "portions", "temps": "temps",
+  "tags": "tags", "video": "video", "vidéo": "video", "source": "source",
+  "kcal": "kcal", "calories": "kcal",
+  "proteines": "proteines", "protéines": "proteines",
+  "glucides": "glucides", "lipides": "lipides"
+};
+const FULL_PASTE_NUMERIC_KEYS = ["portions", "temps", "kcal", "proteines", "glucides", "lipides"];
+function parseFullRecipeText(text) {
+  const lines = text.split("\n");
+  const result = {
+    titre: "", portions: null, temps: null, tags: [], video: "", source: "",
+    kcal: null, proteines: null, glucides: null, lipides: null,
+    ingredients: [], etapes: ""
+  };
+  let mode = null; // null | "ingredients" | "etapes"
+  const etapesLines = [];
+  for (const raw of lines) {
+    const line = raw.trim();
+    const m = line.match(/^([a-zA-Zéèêàâäïîôöùûüç]+)\s*:\s*(.*)$/);
+    if (m) {
+      const key = m[1].toLowerCase();
+      const value = m[2].trim();
+      if (key === "ingredients" || key === "ingrédients") { mode = "ingredients"; continue; }
+      if (key === "etapes" || key === "étapes" || key === "preparation" || key === "préparation") {
+        mode = "etapes";
+        if (value) etapesLines.push(value);
+        continue;
+      }
+      if (FULL_PASTE_FIELD_KEYS[key]) {
+        mode = null;
+        const target = FULL_PASTE_FIELD_KEYS[key];
+        if (target === "tags") {
+          result.tags = value.split(",").map(t => t.trim()).filter(Boolean);
+        } else if (FULL_PASTE_NUMERIC_KEYS.includes(target)) {
+          const num = parseFloat(value.replace(",", "."));
+          result[target] = isNaN(num) ? null : num;
+        } else {
+          result[target] = value;
+        }
+        continue;
+      }
+    }
+    if (mode === "ingredients") {
+      if (line) result.ingredients.push(line);
+    } else if (mode === "etapes") {
+      etapesLines.push(raw);
+    }
+  }
+  result.etapes = etapesLines.join("\n").trim();
+  return result;
+}
+document.getElementById("btnToggleFullPaste").onclick = () => {
+  document.getElementById("fullPasteBox").classList.toggle("open");
+  document.getElementById("fullPasteText").focus();
+};
+document.getElementById("btnFullPasteCancel").onclick = () => {
+  document.getElementById("fullPasteText").value = "";
+  document.getElementById("fullPasteBox").classList.remove("open");
+};
+document.getElementById("btnFullPasteParse").onclick = () => {
+  const raw = document.getElementById("fullPasteText").value;
+  if (!raw.trim()) return;
+  const parsed = parseFullRecipeText(raw);
+  let filled = 0;
+  if (parsed.titre) { document.getElementById("rTitre").value = parsed.titre; filled++; }
+  if (parsed.portions !== null) { document.getElementById("rPortions").value = parsed.portions; filled++; }
+  if (parsed.temps !== null) { document.getElementById("rTemps").value = parsed.temps; filled++; }
+  if (parsed.video) { document.getElementById("rVideo").value = parsed.video; filled++; }
+  if (parsed.source) { document.getElementById("rSource").value = parsed.source; filled++; }
+  if (parsed.kcal !== null) { document.getElementById("rKcal").value = parsed.kcal; filled++; }
+  if (parsed.proteines !== null) { document.getElementById("rProt").value = parsed.proteines; filled++; }
+  if (parsed.glucides !== null) { document.getElementById("rGluc").value = parsed.glucides; filled++; }
+  if (parsed.lipides !== null) { document.getElementById("rLip").value = parsed.lipides; filled++; }
+  if (parsed.tags.length > 0) {
+    document.querySelectorAll("#rTagsBox .tag-chip").forEach(chip => {
+      const shouldCheck = parsed.tags.some(t => t.toLowerCase() === chip.dataset.tag.toLowerCase());
+      if (shouldCheck) {
+        chip.classList.add("checked");
+        chip.querySelector("input").checked = true;
+      }
+    });
+    filled++;
+  }
+  if (parsed.ingredients.length > 0) {
+    document.getElementById("ingRows").innerHTML = "";
+    parsed.ingredients.forEach(line => {
+      const parts = line.split(";").map(p => p.trim());
+      const nom = parts[0] || "";
+      if (!nom) return;
+      const quantite = parts[1] ? parseFloat(parts[1].replace(",", ".")) : "";
+      const unite = parts[2] || "";
+      const prix = parts[3] ? parseFloat(parts[3].replace(",", ".")) : "";
+      addIngRow({ nom, quantite: isNaN(quantite) ? "" : quantite, unite, prix: isNaN(prix) ? "" : prix });
+    });
+    filled++;
+  }
+  if (parsed.etapes) { document.getElementById("rEtapes").value = parsed.etapes; filled++; }
+
+  document.getElementById("fullPasteText").value = "";
+  document.getElementById("fullPasteBox").classList.remove("open");
+  showToast(filled > 0 ? "Recette pré-remplie — vérifie avant d'enregistrer" : "Aucun champ reconnu dans le texte collé");
+};
 
 /* ---------- Meal Prep ---------- */
 let mpSelection = {};
