@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recettes &amp; Meal Prep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#12160f;
+  --surface:#1a2016;
+  --surface-2:#212a1c;
+  --border:#2e3a27;
+  --text:#eef2e8;
+  --text-muted:#93a186;
+  --accent:#d9a441;
+  --accent-dim:#8a6b2c;
+  --protein:#c1666b;
+  --carbs:#d9a441;
+  --fat:#5b8aa6;
+  --danger:#b5484f;
+  --radius:10px;
+  --font-display:'Fraunces',Georgia,serif;
+  --font-body:'Work Sans',system-ui,-apple-system,sans-serif;
+  --font-mono:'IBM Plex Mono','Courier New',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--font-body);
+  min-height:100vh;
+  padding-bottom:80px;
+}
+::selection{background:var(--accent);color:var(--bg);}
+h1,h2,h3{font-family:var(--font-display);font-weight:600;letter-spacing:-0.01em;}
+.mono{font-family:var(--font-mono);}
+button{font-family:var(--font-body);cursor:pointer;}
+input,select,textarea{font-family:var(--font-body);}
+
+/* ---- Header / Nav ---- */
+header{
+  position:sticky;top:0;z-index:20;
+  background:rgba(18,22,15,0.92);backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--border);
+  padding:14px 20px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+}
+header h1{font-size:1.3rem;color:var(--text);}
+header h1 span{color:var(--accent);}
+nav{display:flex;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:4px;}
+nav button{
+  background:transparent;border:none;color:var(--text-muted);
+  padding:8px 16px;border-radius:999px;font-size:0.88rem;font-weight:500;
+  transition:all .15s ease;
+}
+nav button.active{background:var(--accent);color:var(--bg);}
+.btn-add{
+  background:var(--accent);color:var(--bg);border:none;
+  padding:10px 18px;border-radius:8px;font-weight:600;font-size:0.9rem;
+  display:flex;align-items:center;gap:6px;
+}
+.btn-add:hover{background:#e6b458;}
+
+main{max-width:1100px;margin:0 auto;padding:20px;}
+
+/* ---- Filters ---- */
+.filters-toggle{
+  display:none;width:100%;background:var(--surface);border:1px solid var(--border);
+  color:var(--text);padding:10px;border-radius:8px;margin-bottom:12px;font-weight:500;
+}
+.filters{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px;margin-bottom:20px;
+}
+.filters-row{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px;}
+.filters-row:last-child{margin-bottom:0;}
+.field-group{display:flex;flex-direction:column;gap:4px;}
+.field-group label{font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;}
+.field-group input[type=text],
+.field-group input[type=number],
+.field-group select{
+  background:var(--bg);border:1px solid var(--border);color:var(--text);
+  padding:8px 10px;border-radius:6px;font-size:0.85rem;min-width:0;
+}
+.field-group input[type=text]{min-width:180px;}
+.range-pair{display:flex;gap:6px;align-items:center;}
+.range-pair input{width:70px;}
+.tags-check{display:flex;gap:8px;flex-wrap:wrap;}
+.tag-chip{
+  display:flex;align-items:center;gap:5px;background:var(--bg);border:1px solid var(--border);
+  padding:6px 10px;border-radius:999px;font-size:0.8rem;color:var(--text-muted);cursor:pointer;
+  transition:all .15s ease;
+}
+.tag-chip.checked{border-color:var(--accent);color:var(--accent);background:rgba(217,164,65,0.1);}
+.tag-chip input{display:none;}
+.macro-filters{display:flex;gap:14px;flex-wrap:wrap;padding-top:10px;border-top:1px solid var(--border);margin-top:10px;}
+.macro-filter-item{display:flex;flex-direction:column;gap:4px;}
+.macro-filter-item .swatch{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;}
+.filters-actions{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+.btn-reset{background:none;border:1px solid var(--border);color:var(--text-muted);padding:7px 14px;border-radius:6px;font-size:0.82rem;}
+.btn-reset:hover{color:var(--text);border-color:var(--text-muted);}
+.result-count{color:var(--text-muted);font-size:0.82rem;}
+
+/* ---- Recipe grid ---- */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;}
+.card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px;cursor:pointer;transition:border-color .15s ease,transform .15s ease;
+  display:flex;flex-direction:column;gap:10px;
+}
+.card:hover{border-color:var(--accent-dim);transform:translateY(-2px);}
+.card-title{font-family:var(--font-display);font-size:1.08rem;line-height:1.3;}
+.card-tags{display:flex;gap:5px;flex-wrap:wrap;}
+.badge{font-size:0.68rem;padding:3px 8px;border-radius:999px;background:var(--surface-2);color:var(--text-muted);border:1px solid var(--border);text-transform:uppercase;letter-spacing:0.03em;}
+.card-meta{display:flex;gap:14px;color:var(--text-muted);font-size:0.78rem;}
+.card-meta span{display:flex;align-items:center;gap:4px;}
+.macro-bar{height:6px;border-radius:999px;overflow:hidden;display:flex;background:var(--surface-2);}
+.macro-bar div{height:100%;}
+.card-macros{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:0.76rem;color:var(--text-muted);}
+.card-macros b{color:var(--text);font-weight:600;}
+.empty-state{
+  grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text-muted);
+}
+.empty-state h3{color:var(--text);margin-bottom:8px;font-size:1.1rem;}
+
+/* ---- Modal ---- */
+.overlay{
+  position:fixed;inset:0;background:rgba(8,10,6,0.72);z-index:50;
+  display:none;align-items:flex-start;justify-content:center;padding:30px 16px;overflow-y:auto;
+}
+.overlay.open{display:flex;}
+.modal{
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  max-width:620px;width:100%;padding:24px;position:relative;margin-bottom:40px;
+}
+.modal-close{
+  position:absolute;top:16px;right:16px;background:var(--surface-2);border:1px solid var(--border);
+  color:var(--text-muted);width:32px;height:32px;border-radius:50%;font-size:1rem;line-height:1;
+}
+.modal-close:hover{color:var(--text);}
+.modal h2{font-size:1.4rem;margin-bottom:4px;padding-right:40px;}
+
+/* recipe detail */
+.video-embed{border-radius:10px;overflow:hidden;background:#000;margin:14px 0;}
+.video-embed iframe{width:100%;aspect-ratio:16/9;border:0;display:block;}
+.video-link{
+  display:inline-flex;align-items:center;gap:6px;background:var(--surface-2);border:1px solid var(--border);
+  padding:8px 14px;border-radius:8px;color:var(--accent);text-decoration:none;font-size:0.85rem;margin:10px 0;
+}
+.detail-meta{display:flex;gap:16px;flex-wrap:wrap;color:var(--text-muted);font-size:0.85rem;margin:10px 0 16px;}
+.portion-scaler{
+  display:flex;align-items:center;gap:10px;background:var(--surface-2);border:1px solid var(--border);
+  border-radius:8px;padding:10px 14px;margin-bottom:16px;
+}
+.portion-scaler label{font-size:0.82rem;color:var(--text-muted);}
+.portion-scaler input{
+  width:60px;background:var(--bg);border:1px solid var(--border);color:var(--text);
+  padding:6px 8px;border-radius:6px;text-align:center;font-family:var(--font-mono);
+}
+.portion-scaler .base-note{font-size:0.75rem;color:var(--text-muted);margin-left:auto;}
+.macro-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px;}
+.macro-box{background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center;}
+.macro-box .val{font-family:var(--font-mono);font-size:1.15rem;font-weight:600;}
+.macro-box .lbl{font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;margin-top:2px;}
+.section-title{font-size:0.78rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin:18px 0 8px;}
+.ing-list{list-style:none;}
+.ing-list li{
+  display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.9rem;
+}
+.ing-list li:last-child{border-bottom:none;}
+.ing-list .q{font-family:var(--font-mono);color:var(--accent);min-width:90px;}
+.ing-list .p{color:var(--text-muted);font-family:var(--font-mono);font-size:0.82rem;}
+.steps-text{white-space:pre-wrap;line-height:1.6;font-size:0.92rem;color:var(--text);}
+.detail-actions{display:flex;gap:10px;margin-top:20px;}
+.btn-secondary{background:var(--surface-2);border:1px solid var(--border);color:var(--text);padding:9px 16px;border-radius:8px;font-size:0.85rem;}
+.btn-danger{background:transparent;border:1px solid var(--danger);color:var(--danger);padding:9px 16px;border-radius:8px;font-size:0.85rem;}
+.btn-danger:hover{background:rgba(181,72,79,0.12);}
+.source-link{display:block;margin-top:14px;font-size:0.8rem;color:var(--text-muted);}
+.source-link a{color:var(--accent);}
+
+/* form */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+.form-field{display:flex;flex-direction:column;gap:5px;}
+.form-field.full{grid-column:1/-1;}
+.form-field label{font-size:0.78rem;color:var(--text-muted);}
+.form-field input,.form-field select,.form-field textarea{
+  background:var(--bg);border:1px solid var(--border);color:var(--text);
+  padding:9px 10px;border-radius:6px;font-size:0.88rem;width:100%;
+}
+.form-field textarea{resize:vertical;min-height:90px;font-family:var(--font-body);line-height:1.5;}
+.import-box{background:var(--surface-2);border:1px dashed var(--border);border-radius:8px;padding:14px;margin-bottom:18px;}
+.import-box .row{display:flex;gap:8px;}
+.import-box input{flex:1;}
+.import-box button{background:var(--accent);color:var(--bg);border:none;padding:9px 14px;border-radius:6px;font-size:0.82rem;font-weight:600;white-space:nowrap;}
+.import-status{font-size:0.78rem;margin-top:8px;color:var(--text-muted);}
+.import-status.err{color:var(--danger);}
+.import-status.ok{color:var(--accent);}
+.import-hint{font-size:0.72rem;color:var(--text-muted);margin-top:6px;line-height:1.4;}
+.ing-rows{display:flex;flex-direction:column;gap:8px;}
+.ing-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:6px;align-items:center;}
+.ing-row input{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:6px;font-size:0.84rem;}
+.ing-row button{background:none;border:none;color:var(--text-muted);font-size:1.1rem;padding:4px;}
+.ing-row button:hover{color:var(--danger);}
+.btn-add-row{
+  background:none;border:1px dashed var(--border);color:var(--text-muted);
+  padding:8px;border-radius:6px;font-size:0.82rem;margin-top:8px;
+}
+.btn-add-row:hover{color:var(--accent);border-color:var(--accent-dim);}
+.form-actions{display:flex;gap:10px;margin-top:20px;}
+.btn-primary{background:var(--accent);color:var(--bg);border:none;padding:10px 20px;border-radius:8px;font-weight:600;font-size:0.9rem;}
+.btn-primary:hover{background:#e6b458;}
+
+/* meal prep */
+.mealprep-list{display:flex;flex-direction:column;gap:10px;margin-bottom:24px;}
+.mp-row{
+  display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:12px 14px;
+}
+.mp-row .name{flex:1;font-weight:500;}
+.mp-row .name small{display:block;color:var(--text-muted);font-weight:400;font-size:0.78rem;}
+.mp-row input{
+  width:70px;background:var(--bg);border:1px solid var(--border);color:var(--text);
+  padding:7px;border-radius:6px;text-align:center;font-family:var(--font-mono);
+}
+.mp-row label{font-size:0.72rem;color:var(--text-muted);}
+.mp-generate{background:var(--accent);color:var(--bg);border:none;padding:12px 22px;border-radius:8px;font-weight:600;margin-bottom:20px;}
+.shopping-list{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;}
+.shopping-list h3{margin-bottom:14px;}
+.sl-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);}
+.sl-item:last-child{border-bottom:none;}
+.sl-item input[type=checkbox]{width:17px;height:17px;accent-color:var(--accent);}
+.sl-item .n{flex:1;}
+.sl-item.checked .n{text-decoration:line-through;color:var(--text-muted);}
+.sl-item .q{font-family:var(--font-mono);color:var(--accent);font-size:0.85rem;}
+.sl-item .pr{font-family:var(--font-mono);color:var(--text-muted);font-size:0.8rem;min-width:55px;text-align:right;}
+.sl-totals{display:flex;justify-content:space-between;margin-top:16px;padding-top:16px;border-top:1px solid var(--border);font-family:var(--font-mono);font-weight:600;}
+.sl-empty{text-align:center;color:var(--text-muted);padding:30px;}
+
+.toast{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  background:var(--surface-2);border:1px solid var(--accent-dim);color:var(--text);
+  padding:11px 20px;border-radius:8px;font-size:0.85rem;z-index:100;
+  opacity:0;pointer-events:none;transition:opacity .2s ease;
+}
+.toast.show{opacity:1;}
+
+@media(max-width:640px){
+  .form-grid{grid-template-columns:1fr;}
+  .filters-toggle{display:block;}
+  .filters{display:none;}
+  .filters.open{display:block;}
+  .macro-grid{grid-template-columns:repeat(2,1fr);}
+  .ing-row{grid-template-columns:1fr;gap:4px;background:var(--bg);padding:8px;border-radius:6px;}
+  header h1{font-size:1.1rem;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Recettes<span>.</span></h1>
+  <nav>
+    <button id="navRecipes" class="active">Recettes</button>
+    <button id="navMealPrep">Meal Prep</button>
+  </nav>
+  <button class="btn-add" id="btnOpenAdd">+ Ajouter une recette</button>
+</header>
+
+<main>
+  <!-- ===== RECIPES VIEW ===== -->
+  <div id="viewRecipes">
+    <button class="filters-toggle" id="btnToggleFilters">Filtres &amp; recherche ▾</button>
+    <div class="filters" id="filtersPanel">
+      <div class="filters-row">
+        <div class="field-group" style="flex:1;">
+          <label>Recherche</label>
+          <input type="text" id="fSearch" placeholder="Nom de la recette...">
+        </div>
+        <div class="field-group">
+          <label>Temps de prépa max (min)</label>
+          <input type="number" id="fTempsMax" min="0" placeholder="ex: 30" style="width:100px;">
+        </div>
+        <div class="field-group">
+          <label>Prix / portion (€)</label>
+          <div class="range-pair">
+            <input type="number" id="fPrixMin" min="0" step="0.1" placeholder="min">
+            <span style="color:var(--text-muted);">–</span>
+            <input type="number" id="fPrixMax" min="0" step="0.1" placeholder="max">
+          </div>
+        </div>
+        <div class="field-group">
+          <label>Trier par</label>
+          <select id="fSortBy">
+            <option value="">Aucun</option>
+            <option value="kcal">Calories</option>
+            <option value="proteines">Protéines</option>
+            <option value="glucides">Glucides</option>
+            <option value="lipides">Lipides</option>
+            <option value="prix">Prix</option>
+            <option value="tempsPrep">Temps de prépa</option>
+            <option value="titre">Nom</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label>Ordre</label>
+          <select id="fSortDir">
+            <option value="asc">Croissant</option>
+            <option value="desc">Décroissant</option>
+          </select>
+        </div>
+      </div>
+      <div class="filters-row">
+        <div class="field-group">
+          <label>Type de repas</label>
+          <div class="tags-check" id="fTags"></div>
+        </div>
+      </div>
+      <div class="macro-filters" id="fMacros"></div>
+      <div class="filters-actions" style="margin-top:12px;">
+        <span class="result-count" id="resultCount"></span>
+        <button class="btn-reset" id="btnResetFilters">Réinitialiser les filtres</button>
+      </div>
+    </div>
+    <div class="grid" id="recipeGrid"></div>
+  </div>
+
+  <!-- ===== MEAL PREP VIEW ===== -->
+  <div id="viewMealPrep" style="display:none;">
+    <h2 style="margin-bottom:6px;">Planifier le meal prep</h2>
+    <p style="color:var(--text-muted);font-size:0.88rem;margin-bottom:18px;">Indique combien de portions tu veux préparer pour chaque recette. La liste de courses additionnera automatiquement les ingrédients communs.</p>
+    <div class="mealprep-list" id="mealPrepList"></div>
+    <button class="mp-generate" id="btnGenerateList">Générer la liste de courses</button>
+    <div id="shoppingListWrap"></div>
+  </div>
+</main>
+
+<!-- ===== RECIPE DETAIL MODAL ===== -->
+<div class="overlay" id="overlayDetail">
+  <div class="modal" id="detailModal"></div>
+</div>
+
+<!-- ===== ADD/EDIT FORM MODAL ===== -->
+<div class="overlay" id="overlayForm">
+  <div class="modal">
+    <button class="modal-close" id="btnCloseForm">✕</button>
+    <h2 id="formTitle">Ajouter une recette</h2>
+    <div class="import-box">
+      <label style="font-size:0.78rem;color:var(--text-muted);display:block;margin-bottom:8px;">Importer depuis un lien (best-effort)</label>
+      <div class="row">
+        <input type="text" id="importUrl" placeholder="https://...">
+        <button id="btnImport">Essayer d'extraire</button>
+      </div>
+      <div class="import-status" id="importStatus"></div>
+      <div class="import-hint">Fonctionne seulement sur les sites qui exposent des données de recette structurées (schema.org). Pour Instagram/TikTok ou la plupart des blogs, ça ne marchera pas — remplis le formulaire à la main. Vérifie toujours ce qui est importé.</div>
+    </div>
+    <form id="recipeForm">
+      <div class="form-grid">
+        <div class="form-field full">
+          <label>Titre de la recette</label>
+          <input type="text" id="rTitre" required>
+        </div>
+        <div class="form-field">
+          <label>Portions de base</label>
+          <input type="number" id="rPortions" min="1" value="4" required>
+        </div>
+        <div class="form-field">
+          <label>Temps de préparation (min)</label>
+          <input type="number" id="rTemps" min="0" required>
+        </div>
+        <div class="form-field full">
+          <label>Lien vidéo (YouTube ou Instagram)</label>
+          <input type="text" id="rVideo" placeholder="https://...">
+        </div>
+        <div class="form-field full">
+          <label>Lien source (article, blog...)</label>
+          <input type="text" id="rSource" placeholder="https://...">
+        </div>
+        <div class="form-field full">
+          <label>Type de repas</label>
+          <div class="tags-check" id="rTagsBox"></div>
+        </div>
+      </div>
+
+      <div class="section-title">Macros totales (pour les portions de base)</div>
+      <div class="form-grid">
+        <div class="form-field"><label>Calories (kcal)</label><input type="number" id="rKcal" min="0" step="1" required></div>
+        <div class="form-field"><label>Protéines (g)</label><input type="number" id="rProt" min="0" step="0.1" required></div>
+        <div class="form-field"><label>Glucides (g)</label><input type="number" id="rGluc" min="0" step="0.1" required></div>
+        <div class="form-field"><label>Lipides (g)</label><input type="number" id="rLip" min="0" step="0.1" required></div>
+      </div>
+
+      <div class="section-title">Ingrédients (pour les portions de base)</div>
+      <div class="ing-rows" id="ingRows"></div>
+      <button type="button" class="btn-add-row" id="btnAddIng">+ Ajouter un ingrédient</button>
+
+      <div class="section-title">Étapes de préparation</div>
+      <div class="form-field full">
+        <textarea id="rEtapes" placeholder="1. ...&#10;2. ...&#10;3. ..."></textarea>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn-primary">Enregistrer</button>
+        <button type="button" class="btn-secondary" id="btnCancelForm">Annuler</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBvCTNvHnc5PgbKaQ4W1UiRMUM5j9a5KWU",
+  authDomain: "collecto-55aa4.firebaseapp.com",
+  projectId: "collecto-55aa4",
+  storageBucket: "collecto-55aa4.firebasestorage.app",
+  messagingSenderId: "324623659789",
+  appId: "1:324623659789:web:a388237ddadde2b9f77644"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const recettesCol = collection(db, "nutrition_recettes");
+
+const TAGS = ["Petit-déj", "Déjeuner", "Dîner", "Collation"];
+const MACRO_KEYS = [
+  { key: "kcal", label: "Kcal", color: "var(--text)" },
+  { key: "proteines", label: "Protéines", color: "var(--protein)" },
+  { key: "glucides", label: "Glucides", color: "var(--carbs)" },
+  { key: "lipides", label: "Lipides", color: "var(--fat)" }
+];
+
+let recettes = [];
+let filters = {
+  search: "", tags: new Set(), tempsMax: null, prixMin: null, prixMax: null,
+  macros: { kcal: {}, proteines: {}, glucides: {}, lipides: {} },
+  sortBy: "", sortDir: "asc"
+};
+let editingId = null;
+let ingRowCount = 0;
+
+/* ---------- Firestore sync ---------- */
+onSnapshot(recettesCol, snap => {
+  recettes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  renderGrid();
+  renderMealPrepList();
+}, err => {
+  showToast("Erreur Firestore : " + err.message);
+});
+
+/* ---------- Helpers ---------- */
+function perPortion(r, field) {
+  const p = r.portionsBase || 1;
+  if (field === "prix") {
+    const total = (r.ingredients || []).reduce((s, i) => s + (Number(i.prix) || 0), 0);
+    return total / p;
+  }
+  return (Number(r.macros?.[field]) || 0) / p;
+}
+function fmt(n, decimals = 0) {
+  if (n === null || n === undefined || isNaN(n)) return "0";
+  return Number(n).toFixed(decimals).replace(/\.0+$/, decimals > 0 ? "" : "");
+}
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2400);
+}
+function getYouTubeId(url) {
+  const patterns = [
+    /youtube\.com\/watch\?v=([^&]+)/,
+    /youtu\.be\/([^?&]+)/,
+    /youtube\.com\/shorts\/([^?&]+)/,
+    /youtube\.com\/embed\/([^?&]+)/
+  ];
+  for (const p of patterns) { const m = url.match(p); if (m) return m[1]; }
+  return null;
+}
+function detectVideoType(url) {
+  if (!url) return null;
+  if (/youtu\.?be/i.test(url)) return "youtube";
+  if (/instagram\.com/i.test(url)) return "instagram";
+  return "autre";
+}
+let igScriptLoaded = false;
+function ensureInstagramScript(cb) {
+  if (igScriptLoaded && window.instgrm) { cb(); return; }
+  const s = document.createElement("script");
+  s.src = "https://www.instagram.com/embed.js";
+  s.async = true;
+  s.onload = () => { igScriptLoaded = true; cb(); };
+  document.body.appendChild(s);
+}
+function videoEmbedHtml(video) {
+  if (!video || !video.url) return "";
+  const type = video.type || detectVideoType(video.url);
+  if (type === "youtube") {
+    const id = getYouTubeId(video.url);
+    if (id) {
+      return `<div class="video-embed"><iframe src="https://www.youtube.com/embed/${id}" allowfullscreen loading="lazy"></iframe></div>`;
+    }
+  }
+  if (type === "instagram") {
+    return `<blockquote class="instagram-media" data-instgrm-permalink="${video.url}" data-instgrm-version="14" style="margin:14px 0;width:100%;"></blockquote>`;
+  }
+  return `<a class="video-link" href="${video.url}" target="_blank" rel="noopener">▶ Voir la vidéo</a>`;
+}
+function processEmbeds(container) {
+  if (container.querySelector(".instagram-media")) {
+    ensureInstagramScript(() => { try { window.instgrm.Embeds.process(); } catch (e) {} });
+  }
+}
+
+/* ---------- Nav ---------- */
+document.getElementById("navRecipes").onclick = () => switchView("recipes");
+document.getElementById("navMealPrep").onclick = () => switchView("mealprep");
+function switchView(v) {
+  document.getElementById("viewRecipes").style.display = v === "recipes" ? "block" : "none";
+  document.getElementById("viewMealPrep").style.display = v === "mealprep" ? "block" : "none";
+  document.getElementById("navRecipes").classList.toggle("active", v === "recipes");
+  document.getElementById("navMealPrep").classList.toggle("active", v === "mealprep");
+}
+document.getElementById("btnToggleFilters").onclick = () => {
+  document.getElementById("filtersPanel").classList.toggle("open");
+};
+
+/* ---------- Filters UI build ---------- */
+function buildFilterTags() {
+  const box = document.getElementById("fTags");
+  box.innerHTML = TAGS.map(t => `
+    <label class="tag-chip" data-tag="${t}">
+      <input type="checkbox" value="${t}"> ${t}
+    </label>`).join("");
+  box.querySelectorAll(".tag-chip").forEach(chip => {
+    chip.onclick = (e) => {
+      e.preventDefault();
+      const tag = chip.dataset.tag;
+      if (filters.tags.has(tag)) filters.tags.delete(tag); else filters.tags.add(tag);
+      chip.classList.toggle("checked");
+      renderGrid();
+    };
+  });
+}
+function buildMacroFilters() {
+  const box = document.getElementById("fMacros");
+  box.innerHTML = MACRO_KEYS.map(m => `
+    <div class="macro-filter-item">
+      <label><span class="swatch" style="background:${m.color}"></span>${m.label} (par portion)</label>
+      <div class="range-pair">
+        <input type="number" data-macro="${m.key}" data-bound="min" min="0" placeholder="min" style="width:65px;">
+        <span style="color:var(--text-muted);">–</span>
+        <input type="number" data-macro="${m.key}" data-bound="max" min="0" placeholder="max" style="width:65px;">
+      </div>
+    </div>`).join("");
+  box.querySelectorAll("input").forEach(inp => {
+    inp.oninput = () => {
+      const key = inp.dataset.macro, bound = inp.dataset.bound;
+      filters.macros[key][bound] = inp.value === "" ? null : Number(inp.value);
+      renderGrid();
+    };
+  });
+}
+document.getElementById("fSearch").oninput = (e) => { filters.search = e.target.value.toLowerCase(); renderGrid(); };
+document.getElementById("fTempsMax").oninput = (e) => { filters.tempsMax = e.target.value === "" ? null : Number(e.target.value); renderGrid(); };
+document.getElementById("fPrixMin").oninput = (e) => { filters.prixMin = e.target.value === "" ? null : Number(e.target.value); renderGrid(); };
+document.getElementById("fPrixMax").oninput = (e) => { filters.prixMax = e.target.value === "" ? null : Number(e.target.value); renderGrid(); };
+document.getElementById("fSortBy").onchange = (e) => { filters.sortBy = e.target.value; renderGrid(); };
+document.getElementById("fSortDir").onchange = (e) => { filters.sortDir = e.target.value; renderGrid(); };
+document.getElementById("btnResetFilters").onclick = () => {
+  filters = { search: "", tags: new Set(), tempsMax: null, prixMin: null, prixMax: null,
+    macros: { kcal: {}, proteines: {}, glucides: {}, lipides: {} }, sortBy: "", sortDir: "asc" };
+  document.getElementById("fSearch").value = "";
+  document.getElementById("fTempsMax").value = "";
+  document.getElementById("fPrixMin").value = "";
+  document.getElementById("fPrixMax").value = "";
+  document.getElementById("fSortBy").value = "";
+  document.getElementById("fSortDir").value = "asc";
+  document.querySelectorAll("#fMacros input").forEach(i => i.value = "");
+  document.querySelectorAll("#fTags .tag-chip").forEach(c => c.classList.remove("checked"));
+  renderGrid();
+};
+
+/* ---------- Grid rendering ---------- */
+function renderGrid() {
+  let list = recettes.filter(r => {
+    if (filters.search && !(r.titre || "").toLowerCase().includes(filters.search)) return false;
+    if (filters.tags.size > 0) {
+      const rTags = new Set(r.tags || []);
+      let hasOne = false;
+      filters.tags.forEach(t => { if (rTags.has(t)) hasOne = true; });
+      if (!hasOne) return false;
+    }
+    if (filters.tempsMax !== null && (r.tempsPrep || 0) > filters.tempsMax) return false;
+    const prixP = perPortion(r, "prix");
+    if (filters.prixMin !== null && prixP < filters.prixMin) return false;
+    if (filters.prixMax !== null && prixP > filters.prixMax) return false;
+    for (const key of ["kcal", "proteines", "glucides", "lipides"]) {
+      const val = perPortion(r, key);
+      const bounds = filters.macros[key];
+      if (bounds.min !== null && bounds.min !== undefined && val < bounds.min) return false;
+      if (bounds.max !== null && bounds.max !== undefined && val > bounds.max) return false;
+    }
+    return true;
+  });
+
+  if (filters.sortBy) {
+    list.sort((a, b) => {
+      let va, vb;
+      if (filters.sortBy === "titre") { va = (a.titre || "").toLowerCase(); vb = (b.titre || "").toLowerCase(); }
+      else if (filters.sortBy === "tempsPrep") { va = a.tempsPrep || 0; vb = b.tempsPrep || 0; }
+      else if (filters.sortBy === "prix") { va = perPortion(a, "prix"); vb = perPortion(b, "prix"); }
+      else { va = perPortion(a, filters.sortBy); vb = perPortion(b, filters.sortBy); }
+      if (va < vb) return filters.sortDir === "asc" ? -1 : 1;
+      if (va > vb) return filters.sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+  }
+
+  document.getElementById("resultCount").textContent = `${list.length} recette${list.length !== 1 ? "s" : ""}`;
+  const grid = document.getElementById("recipeGrid");
+  if (list.length === 0) {
+    grid.innerHTML = `<div class="empty-state"><h3>Aucune recette</h3><p>Ajoute une recette ou ajuste tes filtres.</p></div>`;
+    return;
+  }
+  grid.innerHTML = list.map(r => cardHtml(r)).join("");
+  grid.querySelectorAll(".card").forEach(c => {
+    c.onclick = () => openDetail(c.dataset.id);
+  });
+}
+function cardHtml(r) {
+  const kcal = perPortion(r, "kcal"), prot = perPortion(r, "proteines"),
+        gluc = perPortion(r, "glucides"), lip = perPortion(r, "lipides"),
+        prix = perPortion(r, "prix");
+  const protKcal = prot * 4, glucKcal = gluc * 4, lipKcal = lip * 9;
+  const totalKcalCalc = protKcal + glucKcal + lipKcal || 1;
+  const tags = (r.tags || []).map(t => `<span class="badge">${t}</span>`).join("");
+  return `
+    <div class="card" data-id="${r.id}">
+      <div class="card-title">${escapeHtml(r.titre || "Sans titre")}</div>
+      <div class="card-tags">${tags}</div>
+      <div class="card-meta">
+        <span>⏱ ${r.tempsPrep || 0} min</span>
+        <span>€ ${fmt(prix, 2)}/portion</span>
+      </div>
+      <div class="macro-bar">
+        <div style="width:${protKcal / totalKcalCalc * 100}%;background:var(--protein);"></div>
+        <div style="width:${glucKcal / totalKcalCalc * 100}%;background:var(--carbs);"></div>
+        <div style="width:${lipKcal / totalKcalCalc * 100}%;background:var(--fat);"></div>
+      </div>
+      <div class="card-macros">
+        <span><b>${fmt(kcal)}</b> kcal</span>
+        <span><b>${fmt(prot, 1)}</b>g P</span>
+        <span><b>${fmt(gluc, 1)}</b>g G</span>
+        <span><b>${fmt(lip, 1)}</b>g L</span>
+      </div>
+    </div>`;
+}
+function escapeHtml(s) {
+  const d = document.createElement("div"); d.textContent = s || ""; return d.innerHTML;
+}
+
+/* ---------- Detail modal ---------- */
+function openDetail(id) {
+  const r = recettes.find(x => x.id === id);
+  if (!r) return;
+  renderDetail(r, r.portionsBase || 1);
+  document.getElementById("overlayDetail").classList.add("open");
+}
+function renderDetail(r, portions) {
+  const scale = portions / (r.portionsBase || 1);
+  const kcal = (r.macros?.kcal || 0) * scale, prot = (r.macros?.proteines || 0) * scale,
+        gluc = (r.macros?.glucides || 0) * scale, lip = (r.macros?.lipides || 0) * scale;
+  const prixTotal = (r.ingredients || []).reduce((s, i) => s + (Number(i.prix) || 0), 0) * scale;
+  const ingHtml = (r.ingredients || []).map(i => `
+    <li>
+      <span class="q">${fmt(Number(i.quantite) * scale, 2)} ${escapeHtml(i.unite || "")}</span>
+      <span>${escapeHtml(i.nom)}</span>
+      <span class="p">€${fmt((Number(i.prix) || 0) * scale, 2)}</span>
+    </li>`).join("");
+  const modal = document.getElementById("detailModal");
+  modal.innerHTML = `
+    <button class="modal-close" id="btnCloseDetail">✕</button>
+    <h2>${escapeHtml(r.titre || "")}</h2>
+    <div class="card-tags" style="margin-top:6px;">${(r.tags || []).map(t => `<span class="badge">${t}</span>`).join("")}</div>
+    ${videoEmbedHtml(r.video)}
+    <div class="detail-meta">
+      <span>⏱ ${r.tempsPrep || 0} min de prépa</span>
+    </div>
+    <div class="portion-scaler">
+      <label>Portions souhaitées</label>
+      <input type="number" min="1" id="scalePortions" value="${portions}">
+      <span class="base-note">Recette de base : ${r.portionsBase} portion${r.portionsBase > 1 ? "s" : ""}</span>
+    </div>
+    <div class="macro-grid">
+      <div class="macro-box"><div class="val">${fmt(kcal)}</div><div class="lbl">Kcal</div></div>
+      <div class="macro-box"><div class="val" style="color:var(--protein)">${fmt(prot, 1)}g</div><div class="lbl">Protéines</div></div>
+      <div class="macro-box"><div class="val" style="color:var(--carbs)">${fmt(gluc, 1)}g</div><div class="lbl">Glucides</div></div>
+      <div class="macro-box"><div class="val" style="color:var(--fat)">${fmt(lip, 1)}g</div><div class="lbl">Lipides</div></div>
+    </div>
+    <div class="section-title">Ingrédients — total €${fmt(prixTotal, 2)}</div>
+    <ul class="ing-list">${ingHtml || "<li>Aucun ingrédient renseigné.</li>"}</ul>
+    <div class="section-title">Préparation</div>
+    <div class="steps-text">${escapeHtml(r.etapes || "Aucune étape renseignée.")}</div>
+    ${r.sourceUrl ? `<div class="source-link">Source : <a href="${r.sourceUrl}" target="_blank" rel="noopener">${escapeHtml(r.sourceUrl)}</a></div>` : ""}
+    <div class="detail-actions">
+      <button class="btn-secondary" id="btnEditRecipe">Modifier</button>
+      <button class="btn-danger" id="btnDeleteRecipe">Supprimer</button>
+    </div>
+  `;
+  document.getElementById("btnCloseDetail").onclick = closeDetail;
+  document.getElementById("scalePortions").oninput = (e) => {
+    const v = Math.max(1, Number(e.target.value) || 1);
+    renderDetail(r, v);
+  };
+  document.getElementById("btnEditRecipe").onclick = () => { closeDetail(); openForm(r); };
+  document.getElementById("btnDeleteRecipe").onclick = async () => {
+    if (confirm(`Supprimer "${r.titre}" ?`)) {
+      await deleteDoc(doc(db, "nutrition_recettes", r.id));
+      closeDetail();
+      showToast("Recette supprimée");
+    }
+  };
+  processEmbeds(modal);
+}
+function closeDetail() { document.getElementById("overlayDetail").classList.remove("open"); }
+document.getElementById("overlayDetail").addEventListener("click", (e) => {
+  if (e.target.id === "overlayDetail") closeDetail();
+});
+
+/* ---------- Add/Edit form ---------- */
+function buildFormTags(selected = []) {
+  const box = document.getElementById("rTagsBox");
+  box.innerHTML = TAGS.map(t => `
+    <label class="tag-chip ${selected.includes(t) ? "checked" : ""}" data-tag="${t}">
+      <input type="checkbox" value="${t}" ${selected.includes(t) ? "checked" : ""}> ${t}
+    </label>`).join("");
+  box.querySelectorAll(".tag-chip").forEach(chip => {
+    chip.onclick = (e) => { e.preventDefault(); chip.classList.toggle("checked"); };
+  });
+}
+function addIngRow(data = {}) {
+  ingRowCount++;
+  const wrap = document.getElementById("ingRows");
+  const row = document.createElement("div");
+  row.className = "ing-row";
+  row.dataset.rowId = ingRowCount;
+  row.innerHTML = `
+    <input type="text" placeholder="Nom" class="ing-nom" value="${escapeAttr(data.nom || "")}">
+    <input type="number" step="0.01" placeholder="Qté" class="ing-qte" value="${data.quantite ?? ""}">
+    <input type="text" placeholder="Unité (g, ml...)" class="ing-unite" value="${escapeAttr(data.unite || "")}">
+    <input type="number" step="0.01" placeholder="Prix €" class="ing-prix" value="${data.prix ?? ""}">
+    <button type="button" title="Supprimer">✕</button>
+  `;
+  row.querySelector("button").onclick = () => row.remove();
+  wrap.appendChild(row);
+}
+function escapeAttr(s) { return (s || "").replace(/"/g, "&quot;"); }
+document.getElementById("btnAddIng").onclick = () => addIngRow();
+
+function openForm(recipe = null) {
+  editingId = recipe ? recipe.id : null;
+  document.getElementById("formTitle").textContent = recipe ? "Modifier la recette" : "Ajouter une recette";
+  document.getElementById("recipeForm").reset();
+  document.getElementById("ingRows").innerHTML = "";
+  document.getElementById("importUrl").value = "";
+  document.getElementById("importStatus").textContent = "";
+  document.getElementById("importStatus").className = "import-status";
+
+  if (recipe) {
+    document.getElementById("rTitre").value = recipe.titre || "";
+    document.getElementById("rPortions").value = recipe.portionsBase || 1;
+    document.getElementById("rTemps").value = recipe.tempsPrep || 0;
+    document.getElementById("rVideo").value = recipe.video?.url || "";
+    document.getElementById("rSource").value = recipe.sourceUrl || "";
+    document.getElementById("rKcal").value = recipe.macros?.kcal || 0;
+    document.getElementById("rProt").value = recipe.macros?.proteines || 0;
+    document.getElementById("rGluc").value = recipe.macros?.glucides || 0;
+    document.getElementById("rLip").value = recipe.macros?.lipides || 0;
+    document.getElementById("rEtapes").value = recipe.etapes || "";
+    buildFormTags(recipe.tags || []);
+    (recipe.ingredients || []).forEach(i => addIngRow(i));
+  } else {
+    buildFormTags([]);
+    addIngRow(); addIngRow(); addIngRow();
+  }
+  document.getElementById("overlayForm").classList.add("open");
+}
+function closeForm() { document.getElementById("overlayForm").classList.remove("open"); }
+document.getElementById("btnOpenAdd").onclick = () => openForm();
+document.getElementById("btnCloseForm").onclick = closeForm;
+document.getElementById("btnCancelForm").onclick = closeForm;
+document.getElementById("overlayForm").addEventListener("click", (e) => {
+  if (e.target.id === "overlayForm") closeForm();
+});
+
+document.getElementById("recipeForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const tags = Array.from(document.querySelectorAll("#rTagsBox .tag-chip.checked")).map(c => c.dataset.tag);
+  const ingredients = Array.from(document.querySelectorAll("#ingRows .ing-row")).map(row => ({
+    nom: row.querySelector(".ing-nom").value.trim(),
+    quantite: Number(row.querySelector(".ing-qte").value) || 0,
+    unite: row.querySelector(".ing-unite").value.trim(),
+    prix: Number(row.querySelector(".ing-prix").value) || 0
+  })).filter(i => i.nom);
+
+  const videoUrl = document.getElementById("rVideo").value.trim();
+  const data = {
+    titre: document.getElementById("rTitre").value.trim(),
+    portionsBase: Math.max(1, Number(document.getElementById("rPortions").value) || 1),
+    tempsPrep: Number(document.getElementById("rTemps").value) || 0,
+    tags,
+    video: videoUrl ? { url: videoUrl, type: detectVideoType(videoUrl) } : null,
+    sourceUrl: document.getElementById("rSource").value.trim(),
+    macros: {
+      kcal: Number(document.getElementById("rKcal").value) || 0,
+      proteines: Number(document.getElementById("rProt").value) || 0,
+      glucides: Number(document.getElementById("rGluc").value) || 0,
+      lipides: Number(document.getElementById("rLip").value) || 0
+    },
+    ingredients,
+    etapes: document.getElementById("rEtapes").value
+  };
+
+  try {
+    if (editingId) {
+      await updateDoc(doc(db, "nutrition_recettes", editingId), data);
+      showToast("Recette mise à jour");
+    } else {
+      data.createdAt = Date.now();
+      await addDoc(recettesCol, data);
+      showToast("Recette ajoutée");
+    }
+    closeForm();
+  } catch (err) {
+    showToast("Erreur : " + err.message);
+  }
+});
+
+/* ---------- Best-effort URL import ---------- */
+document.getElementById("btnImport").onclick = async () => {
+  const url = document.getElementById("importUrl").value.trim();
+  const statusEl = document.getElementById("importStatus");
+  if (!url) return;
+  statusEl.textContent = "Import en cours...";
+  statusEl.className = "import-status";
+  document.getElementById("rSource").value = url;
+  const vType = detectVideoType(url);
+  if (vType === "youtube" || vType === "instagram") {
+    document.getElementById("rVideo").value = url;
+  }
+  try {
+    const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(url);
+    const res = await fetch(proxyUrl);
+    if (!res.ok) throw new Error("Page inaccessible");
+    const html = await res.text();
+    const parser = new DOMParser();
+    const doc2 = parser.parseFromString(html, "text/html");
+    const scripts = Array.from(doc2.querySelectorAll('script[type="application/ld+json"]'));
+    let recipeData = null;
+    for (const s of scripts) {
+      try {
+        let json = JSON.parse(s.textContent);
+        const candidates = Array.isArray(json) ? json : (json["@graph"] || [json]);
+        recipeData = candidates.find(c => {
+          const t = c["@type"];
+          return t === "Recipe" || (Array.isArray(t) && t.includes("Recipe"));
+        });
+        if (recipeData) break;
+      } catch (e) { /* skip malformed block */ }
+    }
+    if (!recipeData) {
+      statusEl.textContent = "Aucune donnée de recette structurée trouvée sur cette page. Remplis le formulaire manuellement.";
+      statusEl.className = "import-status err";
+      return;
+    }
+    if (recipeData.name) document.getElementById("rTitre").value = recipeData.name;
+    if (recipeData.recipeYield) {
+      const y = parseInt(recipeData.recipeYield);
+      if (y) document.getElementById("rPortions").value = y;
+    }
+    const totalTime = recipeData.totalTime || recipeData.prepTime;
+    if (totalTime) {
+      const m = String(totalTime).match(/PT(?:(\d+)H)?(?:(\d+)M)?/);
+      if (m) {
+        const mins = (parseInt(m[1] || 0) * 60) + parseInt(m[2] || 0);
+        if (mins) document.getElementById("rTemps").value = mins;
+      }
+    }
+    if (recipeData.recipeIngredient) {
+      document.getElementById("ingRows").innerHTML = "";
+      recipeData.recipeIngredient.forEach(line => addIngRow(parseIngredientLine(line)));
+    }
+    if (recipeData.recipeInstructions) {
+      let steps = recipeData.recipeInstructions;
+      let text;
+      if (Array.isArray(steps)) {
+        text = steps.map((s, idx) => `${idx + 1}. ${s.text || s.name || s}`).join("\n");
+      } else {
+        text = String(steps);
+      }
+      document.getElementById("rEtapes").value = text;
+    }
+    if (recipeData.nutrition) {
+      const nut = recipeData.nutrition;
+      const num = (v) => v ? parseFloat(String(v).replace(/[^\d.]/g, "")) : 0;
+      if (nut.calories) document.getElementById("rKcal").value = num(nut.calories);
+      if (nut.proteinContent) document.getElementById("rProt").value = num(nut.proteinContent);
+      if (nut.carbohydrateContent) document.getElementById("rGluc").value = num(nut.carbohydrateContent);
+      if (nut.fatContent) document.getElementById("rLip").value = num(nut.fatContent);
+    }
+    statusEl.textContent = "Import réussi — vérifie et complète les champs (macros et prix sont rarement fournis par les sites).";
+    statusEl.className = "import-status ok";
+  } catch (err) {
+    statusEl.textContent = "Import impossible (" + err.message + "). Remplis le formulaire manuellement.";
+    statusEl.className = "import-status err";
+  }
+};
+function parseIngredientLine(line) {
+  const m = line.match(/^([\d.,]+)\s*([a-zA-Zàâäéèêëïîôöùûüç.]*)\s+(?:de |d')?(.+)$/i);
+  if (m) {
+    return { quantite: parseFloat(m[1].replace(",", ".")) || "", unite: m[2] || "", nom: m[3].trim() };
+  }
+  return { quantite: "", unite: "", nom: line.trim() };
+}
+
+/* ---------- Meal Prep ---------- */
+let mpSelection = {};
+function renderMealPrepList() {
+  const wrap = document.getElementById("mealPrepList");
+  if (recettes.length === 0) {
+    wrap.innerHTML = `<p style="color:var(--text-muted);">Ajoute d'abord des recettes.</p>`;
+    return;
+  }
+  wrap.innerHTML = recettes.map(r => `
+    <div class="mp-row">
+      <div class="name">${escapeHtml(r.titre)}<small>Base : ${r.portionsBase} portion${r.portionsBase > 1 ? "s" : ""}</small></div>
+      <label>Portions à préparer</label>
+      <input type="number" min="0" value="${mpSelection[r.id] || 0}" data-mp-id="${r.id}">
+    </div>`).join("");
+  wrap.querySelectorAll("input").forEach(inp => {
+    inp.oninput = () => { mpSelection[inp.dataset.mpId] = Number(inp.value) || 0; };
+  });
+}
+document.getElementById("btnGenerateList").onclick = () => {
+  const selected = recettes
+    .map(r => ({ recipe: r, portions: mpSelection[r.id] || 0 }))
+    .filter(x => x.portions > 0);
+
+  const wrapEl = document.getElementById("shoppingListWrap");
+  if (selected.length === 0) {
+    wrapEl.innerHTML = `<div class="shopping-list"><div class="sl-empty">Indique au moins une recette avec des portions &gt; 0.</div></div>`;
+    return;
+  }
+
+  const consolidated = {};
+  let totalPrix = 0, totalKcal = 0, totalProt = 0, totalGluc = 0, totalLip = 0;
+  selected.forEach(({ recipe, portions }) => {
+    const scale = portions / (recipe.portionsBase || 1);
+    totalKcal += (recipe.macros?.kcal || 0) * scale;
+    totalProt += (recipe.macros?.proteines || 0) * scale;
+    totalGluc += (recipe.macros?.glucides || 0) * scale;
+    totalLip += (recipe.macros?.lipides || 0) * scale;
+    (recipe.ingredients || []).forEach(ing => {
+      const key = (ing.nom || "").trim().toLowerCase() + "|" + (ing.unite || "").trim().toLowerCase();
+      const qty = (Number(ing.quantite) || 0) * scale;
+      const prix = (Number(ing.prix) || 0) * scale;
+      totalPrix += prix;
+      if (!consolidated[key]) {
+        consolidated[key] = { nom: ing.nom, unite: ing.unite, quantite: 0, prix: 0 };
+      }
+      consolidated[key].quantite += qty;
+      consolidated[key].prix += prix;
+    });
+  });
+
+  const items = Object.values(consolidated).sort((a, b) => a.nom.localeCompare(b.nom));
+  wrapEl.innerHTML = `
+    <div class="shopping-list">
+      <h3>Liste de courses</h3>
+      ${items.map((it, idx) => `
+        <div class="sl-item" data-idx="${idx}">
+          <input type="checkbox">
+          <span class="n">${escapeHtml(it.nom)}</span>
+          <span class="q">${fmt(it.quantite, 2)} ${escapeHtml(it.unite || "")}</span>
+          <span class="pr">€${fmt(it.prix, 2)}</span>
+        </div>`).join("")}
+      <div class="sl-totals">
+        <span>Total : €${fmt(totalPrix, 2)}</span>
+        <span>${fmt(totalKcal)} kcal · ${fmt(totalProt, 1)}g P · ${fmt(totalGluc, 1)}g G · ${fmt(totalLip, 1)}g L</span>
+      </div>
+    </div>`;
+  wrapEl.querySelectorAll(".sl-item").forEach(row => {
+    row.querySelector("input").onchange = () => row.classList.toggle("checked");
+  });
+};
+
+/* ---------- Init ---------- */
+buildFilterTags();
+buildMacroFilters();
+</script>
+</body>
+</html>
