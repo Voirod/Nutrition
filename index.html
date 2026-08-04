@@ -203,7 +203,7 @@ main{max-width:1100px;margin:0 auto;padding:20px;}
 .import-hint{font-size:0.72rem;color:var(--text-muted);margin-top:6px;line-height:1.4;}
 .ing-rows{display:flex;flex-direction:column;gap:8px;}
 .ing-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:6px;align-items:center;}
-.ing-row input{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:6px;font-size:0.84rem;}
+.ing-row input{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:6px;font-size:0.84rem;min-width:0;width:100%;}
 .ing-row button{background:none;border:none;color:var(--text-muted);font-size:1.1rem;padding:4px;}
 .ing-row button:hover{color:var(--danger);}
 .btn-add-row{
@@ -254,6 +254,20 @@ main{max-width:1100px;margin:0 auto;padding:20px;}
 .sl-item .pr{font-family:var(--font-mono);color:var(--text-muted);font-size:0.8rem;min-width:55px;text-align:right;}
 .sl-totals{display:flex;justify-content:space-between;margin-top:16px;padding-top:16px;border-top:1px solid var(--border);font-family:var(--font-mono);font-weight:600;}
 .sl-empty{text-align:center;color:var(--text-muted);padding:30px;}
+.mp-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;}
+.mp-actions .mp-generate{margin-bottom:0;}
+#printArea{display:none;}
+@media print{
+  body > *:not(#printArea){display:none !important;}
+  #printArea{display:block !important;color:#000;background:#fff;font-family:var(--font-body);padding:0;}
+  #printArea h1{font-family:var(--font-serif);font-size:1.5rem;margin-bottom:2px;}
+  #printArea .print-date{color:#555;font-size:0.85rem;margin-bottom:20px;}
+  #printArea h2{font-size:1.05rem;margin:18px 0 8px;border-bottom:1px solid #999;padding-bottom:4px;}
+  #printArea table{width:100%;border-collapse:collapse;margin-bottom:10px;}
+  #printArea th,#printArea td{text-align:left;padding:6px 4px;border-bottom:1px solid #ddd;font-size:0.88rem;}
+  #printArea th{color:#555;font-weight:600;}
+  #printArea .print-totals{margin-top:14px;padding-top:10px;border-top:2px solid #000;font-weight:700;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+}
 
 .toast{
   position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
@@ -347,11 +361,27 @@ main{max-width:1100px;margin:0 auto;padding:20px;}
   <div id="viewMealPrep" style="display:none;">
     <h2 style="margin-bottom:6px;">Planifier le meal prep</h2>
     <p style="color:var(--text-muted);font-size:0.88rem;margin-bottom:18px;">Indique combien de portions tu veux préparer pour chaque recette. La liste de courses additionnera automatiquement les ingrédients communs.</p>
+    <div class="filters-row" style="margin-bottom:14px;">
+      <div class="field-group" style="flex:1;min-width:200px;">
+        <label>Recherche</label>
+        <input type="text" id="mpSearch" placeholder="Nom de la recette...">
+      </div>
+      <div class="field-group">
+        <label>Type de repas</label>
+        <div class="tags-check" id="mpTags"></div>
+      </div>
+    </div>
     <div class="mealprep-list" id="mealPrepList"></div>
-    <button class="mp-generate" id="btnGenerateList">Générer la liste de courses</button>
+    <div class="mp-actions">
+      <button class="mp-generate" id="btnGenerateList">Générer la liste de courses</button>
+      <button class="btn-secondary" id="btnExportPdf">Télécharger en PDF</button>
+      <button class="btn-reset" id="btnResetMealPrep">Réinitialiser le meal prep</button>
+    </div>
     <div id="shoppingListWrap"></div>
   </div>
 </main>
+
+<div id="printArea"></div>
 
 <!-- ===== RECIPE DETAIL MODAL ===== -->
 <div class="overlay" id="overlayDetail">
@@ -461,7 +491,7 @@ main{max-width:1100px;margin:0 auto;padding:20px;}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot
+  getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, setDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -475,6 +505,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const recettesCol = collection(db, "nutrition_recettes");
+const mpDocRef = doc(db, "nutrition_mealprep", "selection");
 
 const TAGS = ["Petit-déj", "Déjeuner", "Dîner", "Collation"];
 const MACRO_KEYS = [
@@ -492,6 +523,7 @@ let filters = {
 };
 let editingId = null;
 let ingRowCount = 0;
+let mpFilters = { search: "", tags: new Set() };
 
 /* ---------- Firestore sync ---------- */
 onSnapshot(recettesCol, snap => {
@@ -737,7 +769,6 @@ function renderDetail(r, portions) {
     <button class="modal-close" id="btnCloseDetail">✕</button>
     <h2>${escapeHtml(r.titre || "")}</h2>
     <div class="card-tags" style="margin-top:6px;">${(r.tags || []).map(t => `<span class="badge">${t}</span>`).join("")}</div>
-    ${videoEmbedHtml(r.video)}
     <div class="detail-meta">
       <span>⏱ ${r.tempsPrep || 0} min de prépa</span>
     </div>
@@ -757,6 +788,7 @@ function renderDetail(r, portions) {
     <div class="section-title">Préparation</div>
     <div class="steps-text">${escapeHtml(r.etapes || "Aucune étape renseignée.")}</div>
     ${r.sourceUrl ? `<div class="source-link">Source : <a href="${r.sourceUrl}" target="_blank" rel="noopener">${escapeHtml(r.sourceUrl)}</a></div>` : ""}
+    ${r.video?.url ? `<div class="section-title">Vidéo</div>${videoEmbedHtml(r.video)}` : ""}
     <div class="detail-actions">
       <button class="btn-secondary" id="btnEditRecipe">Modifier</button>
       <button class="btn-danger" id="btnDeleteRecipe">Supprimer</button>
@@ -1116,21 +1148,74 @@ document.getElementById("btnFullPasteParse").onclick = () => {
 };
 
 /* ---------- Meal Prep ---------- */
+let mpSaveTimer = null;
+let lastWrittenMpJSON = null;
+function saveMpSelection() {
+  clearTimeout(mpSaveTimer);
+  mpSaveTimer = setTimeout(async () => {
+    lastWrittenMpJSON = JSON.stringify(mpSelection);
+    try {
+      await setDoc(mpDocRef, { selection: mpSelection });
+    } catch (e) {
+      showToast("Erreur de synchronisation : " + e.message);
+    }
+  }, 600);
+}
 let mpSelection = {};
+onSnapshot(mpDocRef, snap => {
+  const data = snap.exists() ? (snap.data().selection || {}) : {};
+  if (JSON.stringify(data) === lastWrittenMpJSON) return;
+  mpSelection = data;
+  renderMealPrepList();
+}, err => {
+  showToast("Erreur Firestore (meal prep) : " + err.message);
+});
+let lastShoppingList = null;
+function buildMealPrepTagFilters() {
+  const box = document.getElementById("mpTags");
+  box.innerHTML = TAGS.map(t => `
+    <label class="tag-chip" data-tag="${t}">
+      <input type="checkbox" value="${t}"> ${t}
+    </label>`).join("");
+  box.querySelectorAll(".tag-chip").forEach(chip => {
+    chip.onclick = (e) => {
+      e.preventDefault();
+      const tag = chip.dataset.tag;
+      if (mpFilters.tags.has(tag)) mpFilters.tags.delete(tag); else mpFilters.tags.add(tag);
+      chip.classList.toggle("checked");
+      renderMealPrepList();
+    };
+  });
+}
+document.getElementById("mpSearch").oninput = (e) => { mpFilters.search = e.target.value.toLowerCase(); renderMealPrepList(); };
 function renderMealPrepList() {
   const wrap = document.getElementById("mealPrepList");
   if (recettes.length === 0) {
     wrap.innerHTML = `<p style="color:var(--text-muted);">Ajoute d'abord des recettes.</p>`;
     return;
   }
-  wrap.innerHTML = recettes.map(r => `
+  const list = recettes.filter(r => {
+    if (mpFilters.search && !(r.titre || "").toLowerCase().includes(mpFilters.search)) return false;
+    if (mpFilters.tags.size > 0) {
+      const rTags = new Set(r.tags || []);
+      let hasOne = false;
+      mpFilters.tags.forEach(t => { if (rTags.has(t)) hasOne = true; });
+      if (!hasOne) return false;
+    }
+    return true;
+  });
+  if (list.length === 0) {
+    wrap.innerHTML = `<p style="color:var(--text-muted);">Aucune recette ne correspond à la recherche.</p>`;
+    return;
+  }
+  wrap.innerHTML = list.map(r => `
     <div class="mp-row">
       <div class="name">${escapeHtml(r.titre)}<small>Base : ${r.portionsBase} portion${r.portionsBase > 1 ? "s" : ""}</small></div>
       <label>Portions à préparer</label>
       <input type="number" min="0" value="${mpSelection[r.id] || 0}" data-mp-id="${r.id}">
     </div>`).join("");
   wrap.querySelectorAll("input").forEach(inp => {
-    inp.oninput = () => { mpSelection[inp.dataset.mpId] = Number(inp.value) || 0; };
+    inp.oninput = () => { mpSelection[inp.dataset.mpId] = Number(inp.value) || 0; saveMpSelection(); };
   });
 }
 document.getElementById("btnGenerateList").onclick = () => {
@@ -1140,6 +1225,7 @@ document.getElementById("btnGenerateList").onclick = () => {
 
   const wrapEl = document.getElementById("shoppingListWrap");
   if (selected.length === 0) {
+    lastShoppingList = null;
     wrapEl.innerHTML = `<div class="shopping-list"><div class="sl-empty">Indique au moins une recette avec des portions &gt; 0.</div></div>`;
     return;
   }
@@ -1166,6 +1252,12 @@ document.getElementById("btnGenerateList").onclick = () => {
   });
 
   const items = Object.values(consolidated).sort((a, b) => a.nom.localeCompare(b.nom));
+  lastShoppingList = {
+    generatedAt: new Date(),
+    selected,
+    items,
+    totals: { prix: totalPrix, kcal: totalKcal, proteines: totalProt, glucides: totalGluc, lipides: totalLip }
+  };
   wrapEl.innerHTML = `
     <div class="shopping-list">
       <h3>Liste de courses</h3>
@@ -1186,9 +1278,56 @@ document.getElementById("btnGenerateList").onclick = () => {
   });
 };
 
+document.getElementById("btnResetMealPrep").onclick = async () => {
+  clearTimeout(mpSaveTimer);
+  mpSelection = {};
+  lastWrittenMpJSON = JSON.stringify(mpSelection);
+  renderMealPrepList();
+  lastShoppingList = null;
+  document.getElementById("shoppingListWrap").innerHTML = "";
+  try {
+    await setDoc(mpDocRef, { selection: {} });
+  } catch (e) {
+    showToast("Erreur de synchronisation : " + e.message);
+  }
+  showToast("Meal prep réinitialisé");
+};
+document.getElementById("btnExportPdf").onclick = () => {
+  if (!lastShoppingList) {
+    showToast("Génère d'abord la liste de courses.");
+    return;
+  }
+  const { generatedAt, selected, items, totals } = lastShoppingList;
+  const dateStr = generatedAt.toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
+  const printArea = document.getElementById("printArea");
+  printArea.innerHTML = `
+    <h1>Liste de courses — Meal Prep</h1>
+    <div class="print-date">Générée le ${dateStr}</div>
+    <h2>Recettes sélectionnées</h2>
+    <table>
+      <thead><tr><th>Recette</th><th>Portions à préparer</th></tr></thead>
+      <tbody>
+        ${selected.map(({ recipe, portions }) => `<tr><td>${escapeHtml(recipe.titre)}</td><td>${portions}</td></tr>`).join("")}
+      </tbody>
+    </table>
+    <h2>Ingrédients à acheter</h2>
+    <table>
+      <thead><tr><th>Ingrédient</th><th>Quantité</th><th>Prix</th></tr></thead>
+      <tbody>
+        ${items.map(it => `<tr><td>${escapeHtml(it.nom)}</td><td>${fmt(it.quantite, 2)} ${escapeHtml(it.unite || "")}</td><td>€${fmt(it.prix, 2)}</td></tr>`).join("")}
+      </tbody>
+    </table>
+    <div class="print-totals">
+      <span>Total : €${fmt(totals.prix, 2)}</span>
+      <span>${fmt(totals.kcal)} kcal · ${fmt(totals.proteines, 1)}g P · ${fmt(totals.glucides, 1)}g G · ${fmt(totals.lipides, 1)}g L</span>
+    </div>`;
+  window.print();
+};
+
 /* ---------- Init ---------- */
 buildFilterTags();
 buildMacroFilters();
+buildMealPrepTagFilters();
 </script>
 </body>
 </html>
