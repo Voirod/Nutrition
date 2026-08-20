@@ -4,15 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Recettes &amp; Meal Prep</title>
-
-<!-- === AJOUTS POUR LE RACCOURCI IPHONE === -->
-<!-- Icône pour l'écran d'accueil (Le format recommandé par Apple est un PNG de 180x180 pixels) -->
-<link rel="apple-touch-icon" href="resized-Gemini_Generated_Image_fl7vx8fl7vx8fl7v.jpg">
-
-<!-- (Optionnel) Pour définir un nom court spécifique qui apparaîtra sous l'icône sur l'iPhone -->
-<meta name="apple-mobile-web-app-title" content="Meal Prep">
-<!-- ======================================= -->
-
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -119,10 +110,14 @@ main{max-width:1100px;margin:0 auto;padding:20px;}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;}
 .card{
   background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
-  padding:16px;cursor:pointer;transition:border-color .15s ease,transform .15s ease;
-  display:flex;flex-direction:column;gap:10px;
+  cursor:pointer;transition:border-color .15s ease,transform .15s ease;
+  display:flex;flex-direction:column;overflow:hidden;
 }
 .card:hover{border-color:var(--accent-dim);transform:translateY(-2px);}
+.card-img{width:100%;aspect-ratio:4/3;background:var(--surface-2);}
+.card-img img{width:100%;height:100%;object-fit:cover;display:block;}
+.card-img-placeholder{display:flex;align-items:center;justify-content:center;font-size:2rem;color:var(--text-muted);}
+.card-body{padding:16px;display:flex;flex-direction:column;gap:10px;}
 .card-title{font-family:var(--font-display);font-size:1.08rem;line-height:1.3;}
 .card-tags{display:flex;gap:5px;flex-wrap:wrap;}
 .badge{font-size:0.68rem;padding:3px 8px;border-radius:999px;background:var(--surface-2);color:var(--text-muted);border:1px solid var(--border);text-transform:uppercase;letter-spacing:0.03em;}
@@ -155,6 +150,8 @@ main{max-width:1100px;margin:0 auto;padding:20px;}
 .modal h2{font-size:1.4rem;margin-bottom:4px;padding-right:40px;}
 
 /* recipe detail */
+.detail-img{margin:-24px -24px 16px;border-radius:14px 14px 0 0;overflow:hidden;background:var(--surface-2);}
+.detail-img img{width:100%;max-height:320px;object-fit:cover;display:block;}
 .video-embed{border-radius:10px;overflow:hidden;background:#000;margin:14px 0;}
 .video-embed iframe{width:100%;aspect-ratio:16/9;border:0;display:block;}
 .video-link{
@@ -203,6 +200,8 @@ main{max-width:1100px;margin:0 auto;padding:20px;}
 }
 .form-field textarea{resize:vertical;min-height:90px;font-family:var(--font-body);line-height:1.5;}
 .import-box{background:var(--surface-2);border:1px dashed var(--border);border-radius:8px;padding:14px;margin-bottom:18px;}
+.image-preview-wrap{border-radius:8px;overflow:hidden;max-width:280px;}
+.image-preview-wrap img{width:100%;display:block;aspect-ratio:4/3;object-fit:cover;background:var(--surface-2);}
 .import-box .row{display:flex;gap:8px;}
 .import-box input{flex:1;}
 .import-box button{background:var(--accent);color:var(--bg);border:none;padding:9px 14px;border-radius:6px;font-size:0.82rem;font-weight:600;white-space:nowrap;}
@@ -240,6 +239,7 @@ main{max-width:1100px;margin:0 auto;padding:20px;}
 
 /* meal prep */
 .mealprep-list{display:flex;flex-direction:column;gap:10px;margin-bottom:24px;}
+.mealprep-list.collapsed{display:none;}
 .mp-row{
   display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--border);
   border-radius:8px;padding:12px 14px;
@@ -380,6 +380,10 @@ main{max-width:1100px;margin:0 auto;padding:20px;}
         <div class="tags-check" id="mpTags"></div>
       </div>
     </div>
+    <div class="filters-actions" style="margin-bottom:10px;">
+      <span class="result-count" id="mpResultCount"></span>
+      <button class="btn-reset" id="btnToggleMpList">Masquer la liste</button>
+    </div>
     <div class="mealprep-list" id="mealPrepList"></div>
     <div class="mp-actions">
       <button class="mp-generate" id="btnGenerateList">Générer la liste de courses</button>
@@ -421,7 +425,7 @@ main{max-width:1100px;margin:0 auto;padding:20px;}
         <textarea id="fullPasteText" placeholder="Titre: Poulet basquaise&#10;Portions: 4&#10;Temps: 45&#10;Tags: Déjeuner, Dîner&#10;Video: https://...&#10;Source: https://...&#10;Kcal: 520&#10;Proteines: 35&#10;Glucides: 40&#10;Lipides: 18&#10;Ingredients:&#10;Poulet;400;g;6.00&#10;Poivron;2;;1.50&#10;Oignon;1;;0.30&#10;Etapes:&#10;1. Couper le poulet en morceaux.&#10;2. Faire revenir avec les légumes."></textarea>
         <div class="hint">
           Un champ par ligne, format <b>clé: valeur</b> — l'ordre n'a pas d'importance et seuls les champs présents sont utilisés :<br>
-          <b>Titre</b>, <b>Portions</b>, <b>Temps</b> (min), <b>Tags</b> (séparés par des virgules), <b>Video</b>, <b>Source</b>, <b>Kcal</b>, <b>Proteines</b>, <b>Glucides</b>, <b>Lipides</b>.<br>
+          <b>Titre</b>, <b>Portions</b>, <b>Temps</b> (min), <b>Tags</b> (séparés par des virgules), <b>Video</b>, <b>Source</b>, <b>Image</b> (URL d'une photo), <b>Kcal</b>, <b>Proteines</b>, <b>Glucides</b>, <b>Lipides</b>.<br>
           Puis un bloc <b>Ingredients:</b> avec une ligne par ingrédient au format <span class="mono">nom;quantité;unité;prix</span>, et un bloc <b>Etapes:</b> avec le reste du texte (une étape par ligne).
         </div>
         <div class="actions">
@@ -433,6 +437,14 @@ main{max-width:1100px;margin:0 auto;padding:20px;}
 
     <form id="recipeForm">
       <div class="form-grid">
+        <div class="form-field full">
+          <label>Photo (URL d'une image)</label>
+          <input type="text" id="rImageUrl" placeholder="https://... (lien direct vers une image)">
+          <div class="image-preview-wrap" id="imagePreviewWrap" style="display:none;margin-top:8px;">
+            <img id="imagePreview" src="" alt="Aperçu de la recette">
+          </div>
+          <div class="import-hint">Laisse vide pour utiliser automatiquement la miniature YouTube (si lien vidéo) ou l'image récupérée à l'import — ce champ se remplit alors tout seul, et tu peux le modifier.</div>
+        </div>
         <div class="form-field full">
           <label>Titre de la recette</label>
           <input type="text" id="rTitre" required>
@@ -561,6 +573,15 @@ function showToast(msg) {
   t.textContent = msg;
   t.classList.add("show");
   setTimeout(() => t.classList.remove("show"), 2400);
+}
+function getRecipeImageUrl(r) {
+  if (r.imageUrl) return r.imageUrl;
+  const vType = r.video?.type || detectVideoType(r.video?.url);
+  if (vType === "youtube") {
+    const id = getYouTubeId(r.video.url);
+    if (id) return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+  }
+  return "";
 }
 function getYouTubeId(url) {
   const patterns = [
@@ -730,8 +751,13 @@ function cardHtml(r) {
   const protKcal = prot * 4, glucKcal = gluc * 4, lipKcal = lip * 9;
   const totalKcalCalc = protKcal + glucKcal + lipKcal || 1;
   const tags = (r.tags || []).map(t => `<span class="badge">${t}</span>`).join("");
+  const imgUrl = getRecipeImageUrl(r);
   return `
     <div class="card" data-id="${r.id}">
+      ${imgUrl
+        ? `<div class="card-img"><img src="${imgUrl}" alt="" loading="lazy" onerror="this.parentElement.outerHTML='&lt;div class=&quot;card-img card-img-placeholder&quot;&gt;🍽&lt;/div&gt;';"></div>`
+        : `<div class="card-img card-img-placeholder">🍽</div>`}
+      <div class="card-body">
       <div class="card-title">${escapeHtml(r.titre || "Sans titre")}</div>
       <div class="card-tags">${tags}</div>
       <div class="card-meta">
@@ -748,6 +774,7 @@ function cardHtml(r) {
         <span><b>${fmt(prot, 1)}</b>g P</span>
         <span><b>${fmt(gluc, 1)}</b>g G</span>
         <span><b>${fmt(lip, 1)}</b>g L</span>
+      </div>
       </div>
     </div>`;
 }
@@ -774,8 +801,10 @@ function renderDetail(r, portions) {
       <span class="p">€${fmt((Number(i.prix) || 0) * scale, 2)}</span>
     </li>`).join("");
   const modal = document.getElementById("detailModal");
+  const imgUrl = getRecipeImageUrl(r);
   modal.innerHTML = `
     <button class="modal-close" id="btnCloseDetail">✕</button>
+    ${imgUrl ? `<div class="detail-img"><img src="${imgUrl}" alt="" loading="lazy" onerror="this.parentElement.style.display='none';"></div>` : ""}
     <h2>${escapeHtml(r.titre || "")}</h2>
     <div class="card-tags" style="margin-top:6px;">${(r.tags || []).map(t => `<span class="badge">${t}</span>`).join("")}</div>
     <div class="detail-meta">
@@ -834,6 +863,27 @@ function buildFormTags(selected = []) {
     chip.onclick = (e) => { e.preventDefault(); chip.classList.toggle("checked"); };
   });
 }
+/* ---------- Photo de recette (URL manuelle + aperçu) ---------- */
+function setImagePreview(url) {
+  const wrap = document.getElementById("imagePreviewWrap");
+  const img = document.getElementById("imagePreview");
+  if (url) {
+    img.src = url;
+    wrap.style.display = "block";
+  } else {
+    img.src = "";
+    wrap.style.display = "none";
+  }
+}
+function setImageField(url) {
+  document.getElementById("rImageUrl").value = url || "";
+  setImagePreview(url || "");
+}
+document.getElementById("rImageUrl").oninput = (e) => setImagePreview(e.target.value.trim());
+document.getElementById("imagePreview").onerror = () => {
+  document.getElementById("imagePreviewWrap").style.display = "none";
+};
+
 function addIngRow(data = {}) {
   ingRowCount++;
   const wrap = document.getElementById("ingRows");
@@ -893,6 +943,7 @@ function openForm(recipe = null) {
   document.getElementById("bulkIngBox").classList.remove("open");
   document.getElementById("fullPasteText").value = "";
   document.getElementById("fullPasteBox").classList.remove("open");
+  setImageField(recipe && recipe.imageUrl ? recipe.imageUrl : "");
 
   if (recipe) {
     document.getElementById("rTitre").value = recipe.titre || "";
@@ -934,6 +985,7 @@ document.getElementById("recipeForm").addEventListener("submit", async (e) => {
   const videoUrl = document.getElementById("rVideo").value.trim();
   const data = {
     titre: document.getElementById("rTitre").value.trim(),
+    imageUrl: document.getElementById("rImageUrl").value.trim(),
     portionsBase: Math.max(1, Number(document.getElementById("rPortions").value) || 1),
     tempsPrep: Number(document.getElementById("rTemps").value) || 0,
     tags,
@@ -1002,6 +1054,8 @@ document.getElementById("btnImport").onclick = async () => {
       return;
     }
     if (recipeData.name) document.getElementById("rTitre").value = recipeData.name;
+    const imgUrl = extractImageUrl(recipeData.image);
+    if (imgUrl) setImageField(imgUrl);
     if (recipeData.recipeYield) {
       const y = parseInt(recipeData.recipeYield);
       if (y) document.getElementById("rPortions").value = y;
@@ -1043,6 +1097,13 @@ document.getElementById("btnImport").onclick = async () => {
     statusEl.className = "import-status err";
   }
 };
+function extractImageUrl(imageField) {
+  if (!imageField) return "";
+  if (typeof imageField === "string") return imageField;
+  if (Array.isArray(imageField)) return extractImageUrl(imageField[0]);
+  if (typeof imageField === "object") return imageField.url || imageField["@id"] || "";
+  return "";
+}
 function parseIngredientLine(line) {
   const m = line.match(/^([\d.,]+)\s*([a-zA-Zàâäéèêëïîôöùûüç.]*)\s+(?:de |d')?(.+)$/i);
   if (m) {
@@ -1055,6 +1116,7 @@ function parseIngredientLine(line) {
 const FULL_PASTE_FIELD_KEYS = {
   "titre": "titre", "portions": "portions", "temps": "temps",
   "tags": "tags", "video": "video", "vidéo": "video", "source": "source",
+  "image": "image", "photo": "image",
   "kcal": "kcal", "calories": "kcal",
   "proteines": "proteines", "protéines": "proteines",
   "glucides": "glucides", "lipides": "lipides"
@@ -1063,7 +1125,7 @@ const FULL_PASTE_NUMERIC_KEYS = ["portions", "temps", "kcal", "proteines", "gluc
 function parseFullRecipeText(text) {
   const lines = text.split("\n");
   const result = {
-    titre: "", portions: null, temps: null, tags: [], video: "", source: "",
+    titre: "", portions: null, temps: null, tags: [], video: "", source: "", image: "",
     kcal: null, proteines: null, glucides: null, lipides: null,
     ingredients: [], etapes: ""
   };
@@ -1122,6 +1184,7 @@ document.getElementById("btnFullPasteParse").onclick = () => {
   if (parsed.temps !== null) { document.getElementById("rTemps").value = parsed.temps; filled++; }
   if (parsed.video) { document.getElementById("rVideo").value = parsed.video; filled++; }
   if (parsed.source) { document.getElementById("rSource").value = parsed.source; filled++; }
+  if (parsed.image) { setImageField(parsed.image); filled++; }
   if (parsed.kcal !== null) { document.getElementById("rKcal").value = parsed.kcal; filled++; }
   if (parsed.proteines !== null) { document.getElementById("rProt").value = parsed.proteines; filled++; }
   if (parsed.glucides !== null) { document.getElementById("rGluc").value = parsed.glucides; filled++; }
@@ -1197,10 +1260,18 @@ function buildMealPrepTagFilters() {
   });
 }
 document.getElementById("mpSearch").oninput = (e) => { mpFilters.search = e.target.value.toLowerCase(); renderMealPrepList(); };
+let mpListCollapsed = false;
+document.getElementById("btnToggleMpList").onclick = () => {
+  mpListCollapsed = !mpListCollapsed;
+  document.getElementById("mealPrepList").classList.toggle("collapsed", mpListCollapsed);
+  document.getElementById("btnToggleMpList").textContent = mpListCollapsed ? "Afficher la liste" : "Masquer la liste";
+};
 function renderMealPrepList() {
   const wrap = document.getElementById("mealPrepList");
+  const countEl = document.getElementById("mpResultCount");
   if (recettes.length === 0) {
     wrap.innerHTML = `<p style="color:var(--text-muted);">Ajoute d'abord des recettes.</p>`;
+    countEl.textContent = "";
     return;
   }
   const list = recettes.filter(r => {
@@ -1213,6 +1284,7 @@ function renderMealPrepList() {
     }
     return true;
   });
+  countEl.textContent = `${list.length} recette${list.length !== 1 ? "s" : ""}`;
   if (list.length === 0) {
     wrap.innerHTML = `<p style="color:var(--text-muted);">Aucune recette ne correspond à la recherche.</p>`;
     return;
