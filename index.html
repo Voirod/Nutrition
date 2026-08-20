@@ -202,6 +202,16 @@ main{max-width:1100px;margin:0 auto;padding:20px;}
 .import-box{background:var(--surface-2);border:1px dashed var(--border);border-radius:8px;padding:14px;margin-bottom:18px;}
 .image-preview-wrap{border-radius:8px;overflow:hidden;max-width:280px;}
 .image-preview-wrap img{width:100%;display:block;aspect-ratio:4/3;object-fit:cover;background:var(--surface-2);}
+.autocomplete-wrap{position:relative;}
+.autocomplete-dropdown{
+  position:absolute;top:100%;left:0;right:0;z-index:15;margin-top:4px;
+  background:var(--surface-2);border:1px solid var(--border);border-radius:8px;
+  max-height:220px;overflow-y:auto;display:none;
+}
+.autocomplete-dropdown.open{display:block;}
+.autocomplete-item{padding:9px 12px;font-size:0.83rem;color:var(--text);cursor:pointer;font-family:var(--font-mono);}
+.autocomplete-item:hover{background:var(--surface);color:var(--accent);}
+.autocomplete-empty{padding:9px 12px;font-size:0.8rem;color:var(--text-muted);}
 .import-box .row{display:flex;gap:8px;}
 .import-box input{flex:1;}
 .import-box button{background:var(--accent);color:var(--bg);border:none;padding:9px 14px;border-radius:6px;font-size:0.82rem;font-weight:600;white-space:nowrap;}
@@ -439,11 +449,14 @@ main{max-width:1100px;margin:0 auto;padding:20px;}
       <div class="form-grid">
         <div class="form-field full">
           <label>Photo (URL d'une image)</label>
-          <input type="text" id="rImageUrl" placeholder="https://... (lien direct vers une image)">
+          <div class="autocomplete-wrap">
+            <input type="text" id="rImageUrl" placeholder="https://... (lien direct vers une image)" autocomplete="off">
+            <div class="autocomplete-dropdown" id="imageAutocomplete"></div>
+          </div>
           <div class="image-preview-wrap" id="imagePreviewWrap" style="display:none;margin-top:8px;">
             <img id="imagePreview" src="" alt="Aperçu de la recette">
           </div>
-          <div class="import-hint">Laisse vide pour utiliser automatiquement la miniature YouTube (si lien vidéo) ou l'image récupérée à l'import — ce champ se remplit alors tout seul, et tu peux le modifier.</div>
+          <div class="import-hint">Tape pour voir apparaître les images déjà présentes dans le dossier <span class="mono">images/</span> du repo. Laisse vide pour utiliser automatiquement la miniature YouTube (si lien vidéo) ou l'image récupérée à l'import — ce champ se remplit alors tout seul, et tu peux le modifier.</div>
         </div>
         <div class="form-field full">
           <label>Titre de la recette</label>
@@ -863,7 +876,27 @@ function buildFormTags(selected = []) {
     chip.onclick = (e) => { e.preventDefault(); chip.classList.toggle("checked"); };
   });
 }
-/* ---------- Photo de recette (URL manuelle + aperçu) ---------- */
+/* ---------- Photo de recette (URL manuelle + aperçu + autocomplétion depuis le repo GitHub) ---------- */
+const GH_OWNER = "voirod";
+const GH_REPO = "Nutrition";
+const GH_IMAGES_PATH = "images";
+let ghImageFilesCache = null;
+let ghImageFilesPromise = null;
+function loadGhImageFiles() {
+  if (ghImageFilesCache) return Promise.resolve(ghImageFilesCache);
+  if (ghImageFilesPromise) return ghImageFilesPromise;
+  ghImageFilesPromise = fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_IMAGES_PATH}`)
+    .then(res => { if (!res.ok) throw new Error("dossier introuvable"); return res.json(); })
+    .then(list => {
+      ghImageFilesCache = list
+        .filter(f => f.type === "file" && /\.(png|jpe?g|gif|webp|avif|svg)$/i.test(f.name))
+        .map(f => f.name)
+        .sort();
+      return ghImageFilesCache;
+    })
+    .catch(() => { ghImageFilesCache = []; return ghImageFilesCache; });
+  return ghImageFilesPromise;
+}
 function setImagePreview(url) {
   const wrap = document.getElementById("imagePreviewWrap");
   const img = document.getElementById("imagePreview");
@@ -879,7 +912,35 @@ function setImageField(url) {
   document.getElementById("rImageUrl").value = url || "";
   setImagePreview(url || "");
 }
-document.getElementById("rImageUrl").oninput = (e) => setImagePreview(e.target.value.trim());
+const imgInputEl = document.getElementById("rImageUrl");
+const imgDropdownEl = document.getElementById("imageAutocomplete");
+async function updateImageAutocomplete() {
+  const q = imgInputEl.value.trim().toLowerCase();
+  if (!q) { imgDropdownEl.classList.remove("open"); return; }
+  const files = await loadGhImageFiles();
+  const matches = files.filter(name => name.toLowerCase().includes(q)).slice(0, 8);
+  if (files.length === 0) { imgDropdownEl.classList.remove("open"); return; }
+  if (matches.length === 0) {
+    imgDropdownEl.innerHTML = `<div class="autocomplete-empty">Aucune image du dossier ne correspond.</div>`;
+    imgDropdownEl.classList.add("open");
+    return;
+  }
+  imgDropdownEl.innerHTML = matches.map(name => `<div class="autocomplete-item" data-name="${escapeAttr(name)}">${GH_IMAGES_PATH}/${escapeHtml(name)}</div>`).join("");
+  imgDropdownEl.classList.add("open");
+}
+imgInputEl.addEventListener("input", (e) => {
+  setImagePreview(e.target.value.trim());
+  updateImageAutocomplete();
+});
+imgInputEl.addEventListener("focus", () => { if (imgInputEl.value.trim()) updateImageAutocomplete(); });
+imgInputEl.addEventListener("blur", () => { setTimeout(() => imgDropdownEl.classList.remove("open"), 150); });
+imgDropdownEl.addEventListener("mousedown", (e) => {
+  e.preventDefault();
+  const item = e.target.closest(".autocomplete-item");
+  if (!item) return;
+  setImageField(`${GH_IMAGES_PATH}/${item.dataset.name}`);
+  imgDropdownEl.classList.remove("open");
+});
 document.getElementById("imagePreview").onerror = () => {
   document.getElementById("imagePreviewWrap").style.display = "none";
 };
